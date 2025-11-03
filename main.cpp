@@ -26,7 +26,7 @@ int main() {
     int freq[26] = {0};
 
     // Step 1: Read file and count letter frequencies
-    buildFrequencyTable(freq, "input.txt");
+    buildFrequencyTable(freq, "../input.txt");
 
     // Step 2: Create leaf nodes for each character with nonzero frequency
     int nextFree = createLeafNodes(freq);
@@ -39,7 +39,7 @@ int main() {
     generateCodes(root, codes);
 
     // Step 5: Encode the message and print output
-    encodeMessage("input.txt", codes);
+    encodeMessage("../input.txt", codes);
 
     return 0;
 }
@@ -90,9 +90,7 @@ int createLeafNodes(int freq[]) {
 // Step 3: Build the encoding tree using heap operations
 int buildEncodingTree(int nextFree) {
     MinHeap heap;
-    if (nextFree == 0) {
-        return -1;
-    }
+    if (nextFree == 0) return -1;
 
     for (int i = 0; i < nextFree; ++i) {
         heap.push(i, weightArr);
@@ -105,15 +103,17 @@ int buildEncodingTree(int nextFree) {
     while (heap.size > 1) {
         int a = heap.pop(weightArr);
         int b = heap.pop(weightArr);
-        int p = nextFree++;
-        if (nextFree > MAX_NODES) {
-            cerr << "Too many nodes.\n";
-        }
 
-        leftArr[p] = a;
-        rightArr[p] = b;
+        if (nextFree >= MAX_NODES) {
+            cerr << "Too many nodes.\n";
+            exit(1);
+        }
+        int p = nextFree++;
+
+        leftArr[p]   = a;
+        rightArr[p]  = b;
         weightArr[p] = weightArr[a] + weightArr[b];
-        charArr[p] = '0';
+        charArr[p]   = '\0';
 
         heap.push(p, weightArr);
     }
@@ -122,10 +122,38 @@ int buildEncodingTree(int nextFree) {
 
 // Step 4: Use an STL stack to generate codes
 void generateCodes(int root, string codes[]) {
-    // TODO:
-    // Use stack<pair<int, string>> to simulate DFS traversal.
-    // Left edge adds '0', right edge adds '1'.
-    // Record code when a leaf node is reached.
+    for (int i = 0; i < 26; ++i) codes[i].clear();
+    if (root == -1) return;
+
+    stack<int> ns;
+    stack<string> ps;
+
+    ns.push(root);
+    ps.push("");
+
+    while (!ns.empty()) {
+        int node = ns.top(); ns.pop();
+        string path = ps.top(); ps.pop();
+
+        bool isLeaf = (leftArr[node] == -1 && rightArr[node] == -1);
+
+        if (isLeaf) {
+            if (path.empty()) path = "0";
+            char c = charArr[node];
+            if (c >= 'a' && c <= 'z') {
+                codes[c - 'a'] = path;
+            }
+        } else {
+            if (rightArr[node] != -1) {
+                ns.push(rightArr[node]);
+                ps.push(path + "1");
+            }
+            if (leftArr[node] != -1) {
+                ns.push(leftArr[node]);
+                ps.push(path + "0");
+            }
+        }
+    }
 }
 
 // Step 5: Print table and encoded message
